@@ -265,28 +265,28 @@ class Chef
 
         # network configuration through xenstore
         attrs = {}
-        if config[:vm_ip] then
-          ips = config[:vm_ip].split(',')
+        if ip_addresses.length > 0 then
+          ips = ip_addresses
           gateways = config[:vm_gateway].split(',')
           netmasks = config[:vm_netmask].split(',')
 
-          if ips.length != netmasks.length then
-            puts "Network configuration values do not match. You must provide the same number of IP Addresses and Netmasks."
+          if !(ips.length == netmasks.length) then
+            puts "Network configuration values do not match. You must provide the same number of IP Addresses, Gateways and Netmasks."
             return
           end
 
           ips.each_with_index do |ip, index|
             (attrs["vm-data/ifs/#{index}/ip"] = ips[index])
+            (attrs["vm-data/ifs/#{index}/gateway"] = gateways[index]) if gateways.length > index
             (attrs["vm-data/ifs/#{index}/netmask"] = netmasks[index])
-            (attrs["vm-data/ifs/#{index}/gateway"] = gateways[index] if gateways.length > index)
           end
         end
         if config[:vm_dns] then
           nameservers = config[:vm_dns].split(',')
           (attrs['vm-data/nameservers'] = nameservers.join(' '))
-          (attrs['vm-data/nameserver1'] = config[:vm_dns]) unless interface.dns_nameservers.length == 0
-          (attrs['vm-data/nameserver2'] = config[:vm_dns]) if config[:vm_dns]
-          (attrs['vm-data/nameserver3'] = config[:vm_dns]) if config[:vm_dns]
+          (attrs['vm-data/nameserver1'] = config[:vm_dns]) unless nameservers.length == 0
+          (attrs['vm-data/nameserver2'] = config[:vm_dns]) unless nameservers.length <= 1
+          (attrs['vm-data/nameserver3'] = config[:vm_dns]) unless nameservers.length <= 2
         end
 
         (attrs['vm-data/hostname'] = config[:vm_hostname]) if config[:vm_hostname]
@@ -319,8 +319,8 @@ class Chef
           servers = connection.servers
           if config[:vm_ip]
             vm.refresh
-            print "\nTrying to #{'SSH'.yellow} to #{config[:vm_ip].yellow}... "
-            print(".") until tcp_test_ssh(config[:vm_ip]) do
+            print "\nTrying to #{'SSH'.yellow} to #{ip_addresses[0].yellow}... "
+            print(".") until tcp_test_ssh(ip_addresses[0]) do
               sleep @initial_sleep_delay ||= 10; puts(" done")
               @ssh_ip = config[:vm_ip]
             end
@@ -370,6 +370,10 @@ class Chef
           ui.warn "Skipping bootstrapping as requested."
         end
 
+      end
+
+      def ip_addresses
+        config[:vm_ip] ? config[:vm_ip].split(',') : []
       end
 
       def bootstrap_for_node(vm)
