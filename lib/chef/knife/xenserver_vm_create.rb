@@ -41,7 +41,11 @@ class Chef
       option :vm_name,
         :long => "--vm-name NAME",
         :description => "The Virtual Machine name"
-      
+
+      option :vm_hostname,
+             :long => "--vm-hostname HOSTNAME",
+             :description => "The Virtual Machine hostname"
+
       option :vm_tags,
         :long => "--vm-tags tag1[,tag2..]",
         :description => "Comma separated list of tags"
@@ -169,6 +173,14 @@ class Chef
         :long => '--vm-domain DOMAIN',
         :description => 'DOMAIN of host to set in xenstore'
 
+      option :vm_domain_username,
+             :long => '--vm-domain-username DOMAINUSERNAME',
+             :description => 'DOMAINUSERNAME of host to set in xenstore'
+
+      option :vm_domain_password,
+             :long => '--vm-domain-password DOMAINPASSWORD',
+             :description => 'DOMAINPASSWORD of host to set in xenstore'
+
       option :extra_vdis,
         :long => '--extra-vdis "SR name":size1[,"SR NAME":size2,..]',
         :description => 'Create and attach additional VDIs (size in MB)'
@@ -253,11 +265,34 @@ class Chef
 
         # network configuration through xenstore
         attrs = {}
-        (attrs['vm-data/ip'] = config[:vm_ip]) if config[:vm_ip]
-        (attrs['vm-data/gw'] = config[:vm_gateway]) if config[:vm_gateway]
-        (attrs['vm-data/nm'] = config[:vm_netmask]) if config[:vm_netmask]
-        (attrs['vm-data/ns'] = config[:vm_dns]) if config[:vm_dns]
-        (attrs['vm-data/dm'] = config[:vm_domain]) if config[:vm_domain]
+        if config[:vm_ip] then
+          ips = config[:vm_ip].split(',')
+          gateways = config[:vm_gateway].split(',')
+          netmasks = config[:vm_netmask].split(',')
+
+          if !(ips.length == gateways.length == netmasks.length) then
+            puts "Network configuration values do not match. You must provide the same number of IP Addresses, Gateways and Netmasks."
+            return
+          end
+
+          ips.each_with_index do |ip, index|
+            (attrs["vm-data/ifs/#{index}/ip"] = ips[index])
+            (attrs["vm-data/ifs/#{index}/gateway"] = gateways[index])
+            (attrs["vm-data/ifs/#{index}/netmask"] = netmasks[index])
+          end
+        end
+        if config[:vm_dns] then
+          nameservers = config[:vm_dns].split(',')
+          (attrs['vm-data/nameservers'] = nameservers.join(' '))
+          (attrs['vm-data/nameserver1'] = config[:vm_dns]) unless interface.dns_nameservers.length == 0
+          (attrs['vm-data/nameserver2'] = config[:vm_dns]) if config[:vm_dns]
+          (attrs['vm-data/nameserver3'] = config[:vm_dns]) if config[:vm_dns]
+        end
+
+        (attrs['vm-data/hostname'] = config[:vm_hostname]) if config[:vm_hostname]
+        (attrs['vm-data/domain'] = config[:vm_domain]) if config[:vm_domain]
+        (attrs['vm-data/domainusername'] = config[:vm_domain_username]) if config[:vm_domain_username]
+        (attrs['vm-data/domainpassword'] = config[:vm_domain_password]) if config[:vm_domain_password]
         if !attrs.empty?
           puts "Adding attributes to xenstore..."
           vm.set_attribute 'xenstore_data', attrs
