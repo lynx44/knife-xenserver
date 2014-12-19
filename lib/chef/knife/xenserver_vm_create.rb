@@ -270,15 +270,15 @@ class Chef
           gateways = config[:vm_gateway].split(',')
           netmasks = config[:vm_netmask].split(',')
 
-          if !(ips.length == gateways.length == netmasks.length) then
-            puts "Network configuration values do not match. You must provide the same number of IP Addresses, Gateways and Netmasks."
+          if ips.length != netmasks.length then
+            puts "Network configuration values do not match. You must provide the same number of IP Addresses and Netmasks."
             return
           end
 
           ips.each_with_index do |ip, index|
             (attrs["vm-data/ifs/#{index}/ip"] = ips[index])
-            (attrs["vm-data/ifs/#{index}/gateway"] = gateways[index])
             (attrs["vm-data/ifs/#{index}/netmask"] = netmasks[index])
+            (attrs["vm-data/ifs/#{index}/gateway"] = gateways[index] if gateways.length > index)
           end
         end
         if config[:vm_dns] then
