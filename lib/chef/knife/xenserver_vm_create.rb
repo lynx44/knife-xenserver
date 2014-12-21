@@ -322,7 +322,7 @@ class Chef
             print "\nTrying to #{'SSH'.yellow} to #{ip_addresses[0].yellow}... "
             print(".") until tcp_test_ssh(ip_addresses[0]) do
               sleep @initial_sleep_delay ||= 10; puts(" done")
-              @ssh_ip = config[:vm_ip]
+              @ssh_ip = ip_addresses[0]
             end
           else
             loop do
