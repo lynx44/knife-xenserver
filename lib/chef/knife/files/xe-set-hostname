@@ -1,0 +1,32 @@
+#!/bin/bash
+XENSTOREREAD=`which xenstore-read`
+if [ -e $XENSTOREREAD ]; then
+  NAME=`$XENSTOREREAD vm-data/hostname`
+  DOMAIN=`$XENSTOREREAD vm-data/domain`
+
+  [ "$NAME" = "" ] && exit 0
+  echo "$NAME" > /etc/hostname
+  /bin/hostname -F /etc/hostname
+
+  #if domain info wasn't passed in then dont alter the hosts file
+  #[ "$DOMAIN" = "" ] && exit 0
+
+  # otherwise just use the ip address that the machine has already
+  #if [ $IP = "" ]; then IP=`ip addr list eth0 | grep "inet " | cut -d' ' -f6 | cut -d/ -f1`; fi
+
+FQDN=""
+
+if [ ! "$DOMAIN" = "" ]; then
+   FQDN="$NAME.$DOMAIN	"
+fi
+
+echo $FQDN
+
+cat << EOF > /etc/hosts
+127.0.0.1	localhost
+127.0.0.1	$FQDN$NAME
+EOF
+
+fi
+exit 0
+

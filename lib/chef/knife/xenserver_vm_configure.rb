@@ -20,15 +20,15 @@ require 'chef/knife/xenserver_base'
 
 class Chef
   class Knife
-    class XenserverVmPrep < Knife
+    class XenserverVmConfigure < Knife
 
       include Knife::XenserverBase
 
-      banner "knife xenserver vm prep (options)"
+      banner "knife xenserver vm configure (options)"
 
-      option :fqdn,
-             :long => "--fqdn FQDN",
-             :description => "The Virtual Machine address"
+      option :vm_name,
+             :long => "--vm-name NAME",
+             :description => "The template name"
 
       option :username,
              :long => "--username USERNAME",
@@ -51,7 +51,8 @@ class Chef
 
       def run
         ssh = Fog::SSH.new(config[:fqdn], config[:username], {:password => config[:password]})
-        puts ssh.run('ls')[0].stdout
+        # puts ssh.run('ls')[0].stdout
+        connection.servers.all.each { |vm| puts vm.name }
       end
 
     end
