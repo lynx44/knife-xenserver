@@ -1,0 +1,11 @@
+auto lo
+iface lo inet loopback
+
+<% @interfaces.each_with_index do |interface, index| %>
+auto eth<%= index %>
+iface eth<%= index %> inet static
+    address <%= interface.ipaddress %>
+    netmask <%= interface.netmask %>
+<% if interface.gateway != nil then %>    gateway <%= interface.gateway %><% end %>
+<% if interface.nameservers != nil && interface.nameservers.length > 0 then %>    dns-nameservers <%= interface.nameservers.join(' ') %><% end %>
+<% end %>
